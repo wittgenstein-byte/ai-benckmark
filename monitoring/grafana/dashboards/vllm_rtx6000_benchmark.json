@@ -1,0 +1,249 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": ["vllm", "rtx6000", "benchmark"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": false, "text": "All", "value": "$__all" },
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "definition": "label_values(vllm:num_requests_running, model_name)",
+        "includeAll": true,
+        "multi": false,
+        "name": "model_name",
+        "query": "label_values(vllm:num_requests_running, model_name)",
+        "refresh": 2,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-15m", "to": "now" },
+  "timezone": "browser",
+  "title": "vLLM RTX 6000 Benchmark & Bottleneck Monitor",
+  "uid": "vllm-rtx6000-benchmark",
+  "version": 1,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "1. Target Workload & Queue Capacity",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "decimals": 0 }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
+      "id": 1,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "sum(rate(vllm:request_success_total{model_name=~\"$model_name\"}[1m])) * 86400",
+          "legendFormat": "Projected Jobs/Day",
+          "refId": "A"
+        }
+      ],
+      "title": "Projected Capacity (Jobs / Day)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "min": 0, "max": 100 }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
+      "id": 2,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "avg(vllm:gpu_cache_usage_perc{model_name=~\"$model_name\"}) * 100",
+          "legendFormat": "KV-Cache %",
+          "refId": "A"
+        }
+      ],
+      "title": "vLLM GPU KV-Cache Usage (%)",
+      "type": "gauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 1 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "sum(vllm:num_requests_running{model_name=~\"$model_name\"})",
+          "legendFormat": "Running (Active Batch)",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(vllm:num_requests_waiting{model_name=~\"$model_name\"})",
+          "legendFormat": "Waiting (Queued)",
+          "refId": "B"
+        }
+      ],
+      "title": "Concurrent Requests (Running vs Waiting Queue)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
+      "id": 101,
+      "title": "2. Prompt Processing Speed (Prefill / TTFT)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 7 },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(vllm:time_to_first_token_seconds_bucket{model_name=~\"$model_name\"}[1m])) by (le))",
+          "legendFormat": "TTFT p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(vllm:time_to_first_token_seconds_bucket{model_name=~\"$model_name\"}[1m])) by (le))",
+          "legendFormat": "TTFT p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(vllm:time_to_first_token_seconds_bucket{model_name=~\"$model_name\"}[1m])) by (le))",
+          "legendFormat": "TTFT p99",
+          "refId": "C"
+        }
+      ],
+      "title": "Time to First Token (TTFT)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 7 },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "sum(rate(vllm:prompt_tokens_total{model_name=~\"$model_name\"}[1m]))",
+          "legendFormat": "Prefill Prompt tok/s",
+          "refId": "A"
+        }
+      ],
+      "title": "Prompt Processing Speed (Input Tokens / sec)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 102,
+      "title": "3. Generation Throughput (Decode)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 15 },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "sum(rate(vllm:generation_tokens_total{model_name=~\"$model_name\"}[1m]))",
+          "legendFormat": "Aggregate Output tok/s",
+          "refId": "A"
+        }
+      ],
+      "title": "Generation Throughput (Output Tokens / sec)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 15 },
+      "id": 7,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(vllm:time_per_output_token_seconds_bucket{model_name=~\"$model_name\"}[1m])) by (le))",
+          "legendFormat": "TPOT p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(vllm:time_per_output_token_seconds_bucket{model_name=~\"$model_name\"}[1m])) by (le))",
+          "legendFormat": "TPOT p95",
+          "refId": "B"
+        }
+      ],
+      "title": "Time Per Output Token (TPOT / Inter-Token Latency)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+      "id": 103,
+      "title": "4. System Bottleneck (RTX 6000 GPU vs Host CPU & RAM)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 23 },
+      "id": 8,
+      "targets": [
+        {
+          "expr": "avg(DCGM_FI_DEV_GPU_UTIL)",
+          "legendFormat": "GPU Compute % (DCGM)",
+          "refId": "A"
+        },
+        {
+          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)",
+          "legendFormat": "Host CPU % (Node Exporter)",
+          "refId": "B"
+        },
+        {
+          "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+          "legendFormat": "Host RAM % (Node Exporter)",
+          "refId": "C"
+        }
+      ],
+      "title": "Bottleneck Comparison: GPU Compute % vs CPU % vs RAM %",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "decmbytes" } },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 23 },
+      "id": 9,
+      "targets": [
+        {
+          "expr": "sum(DCGM_FI_DEV_FB_USED)",
+          "legendFormat": "VRAM Used (MB)",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(DCGM_FI_DEV_FB_FREE)",
+          "legendFormat": "VRAM Free (MB)",
+          "refId": "B"
+        }
+      ],
+      "title": "RTX 6000 VRAM Usage (Used vs Free MB)",
+      "type": "timeseries"
+    }
+  ]
+}

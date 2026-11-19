@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: "vllm"
+    metrics_path: /metrics
+    static_configs:
+      # Change host.docker.internal:8000 if vLLM runs on another host/port
+      - targets: ["host.docker.internal:8000"]
+
+  - job_name: "dcgm-gpu"
+    static_configs:
+      - targets: ["dcgm-exporter:9400"]
+
+  - job_name: "node"
+    static_configs:
+      - targets: ["node-exporter:9100"]
