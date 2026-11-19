@@ -124,12 +124,25 @@ python -m unittest discover -s tests -v
 
 ### 7. Grafana & Prometheus Live Dashboard (`monitoring/`)
 
-A pre-provisioned monitoring stack (Prometheus + Grafana + Node Exporter + NVIDIA DCGM Exporter) is included under `monitoring/` with an auto-loaded dashboard (`vLLM RTX 6000 Benchmark & Bottleneck Monitor`):
+A pre-provisioned monitoring stack (Prometheus + Grafana + Node Exporter + NVIDIA DCGM Exporter) is included under `monitoring/` with an auto-loaded dashboard (`vLLM RTX 6000 Benchmark & Bottleneck Monitor`), port checks, and SSH tunnel helpers:
 
 ```bash
 cd monitoring
-docker compose up -d
-# Or: bash start_monitoring.sh
+cp .env.example .env   # Adjust ports or GPU_SSH_TARGET if needed
+./scripts/install_and_up.sh
+```
+
+If accessing from a remote laptop over SSH:
+
+```powershell
+# Windows PowerShell
+.\monitoring\scripts\check_ports.ps1
+.\monitoring\scripts\connect_tunnel.ps1
+```
+
+```bash
+# Linux / macOS / WSL
+./monitoring/scripts/connect_tunnel.sh
 ```
 
 - **Grafana**: `http://localhost:3000` (`admin` / `admin`) → Dashboards → `vLLM Benchmark` → `vLLM RTX 6000 Benchmark & Bottleneck Monitor`
