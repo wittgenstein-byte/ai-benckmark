@@ -6,3 +6,7 @@ output/
 *.zip
 .venv/
 venv/
+.env
+monitoring/.env
+benchmark_output/
+etl_output/
