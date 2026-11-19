@@ -45,3 +45,21 @@ jupyter notebook synthea_eda.ipynb
 ```
 
 Update `INPUT_DIR` and `DATA_FORMAT` in the configuration cell and run all cells.
+
+### 5. Patient Clinical Summary ETL (for GPU / LLM Inference)
+
+Group raw Synthea CSV or FHIR R4 data by `PATIENT_ID`, deduplicate/compress longitudinal records, and export token-efficient `.md`, `.json`, and `.jsonl` summaries:
+
+```bash
+# Export per-patient .md, .json, and batch patients_summary.jsonl
+python synthea_etl.py --input-dir path/to/synthea/output/csv --output-dir ./etl_output
+
+# Optional: cap context window per patient and test on first 100 patients
+python synthea_etl.py --input-dir path/to/synthea/output/csv --output-dir ./etl_output --max-tokens 2048 --limit 100
+```
+
+Outputs written to `--output-dir`:
+- `md/<patient_id>.md` — Compact clinical summary in Markdown
+- `json/<patient_id>.json` — Structured patient summary + `clinical_summary_md`
+- `patients_summary.jsonl` — Single-file JSONL for batch GPU inference
+- `etl_manifest.json` & `etl_report.md` — Compression ratio and estimated token distribution (`min`, `median`, `mean`, `p95`, `max`)
